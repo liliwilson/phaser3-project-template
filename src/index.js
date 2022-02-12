@@ -13,8 +13,6 @@ class MyGame extends Phaser.Scene
         super();
 
         this.score = 0;
-        // 1 for start of dash
-        // 0 for end of dash
         this.dashImages = []
         this.dashSteps = 0;
         this.canDash = true
