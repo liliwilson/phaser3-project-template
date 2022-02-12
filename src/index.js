@@ -6,6 +6,9 @@ import startImg from './assets/star.png';
 import bombImg from './assets/bomb.png';
 import dudeSprite from './assets/dude.png';
 
+function easeCurve(x) {
+    return Math.pow(x,3)
+}
 class MyGame extends Phaser.Scene
 {
 
@@ -14,6 +17,10 @@ class MyGame extends Phaser.Scene
         super();
 
         this.score = 0;
+        // 1 for start of dash
+        // 0 for end of dash
+        this.dash = 0;
+        this.canDash = true
         this.player;
     }
 
@@ -32,21 +39,34 @@ class MyGame extends Phaser.Scene
       
     create ()
     {
+        const { width, height } = this.sys.game.canvas;
         const sky = this.add.image(400, 300, 'sky');
 
         // make platforms
         const platforms = this.physics.add.staticGroup();
-        platforms.create(400, 568, 'ground').setScale(2).refreshBody();
+        // platforms.create(400, 568, 'ground').setScale(2).refreshBody();
         platforms.create(600, 400, 'ground');
         platforms.create(50, 250, 'ground');
         platforms.create(750, 220, 'ground');
+        platforms.create(100, 500, 'ground');
+
+        const walls = this.physics.add.staticGroup();
+        walls.create(100, 500, 'ground');
+        walls.rotate(Math.PI/2);
 
         // make player
-        this.player = this.physics.add.sprite(100, 450, 'dude');
-        this.player.setBounce(0.2);
-        this.player.setCollideWorldBounds(true);
-        this.player.body.setGravityY(300)
-        this.physics.add.collider(this.player, platforms);
+        const player = this.physics.add.sprite(100, 450, 'dude');
+        // player.body.setCircle(30)
+        // mySprite.body.setOffset(12, 5);
+
+        player.setBounce(0.2);
+        player.setCollideWorldBounds(true);
+        player.body.setGravityY(300)
+        this.physics.add.collider(player, platforms);
+        this.physics.add.collider(player, walls);
+        this.player = player
+
+        const balls = this.physics.add.group();
 
         // make stars
         const stars = this.physics.add.group({
@@ -66,6 +86,7 @@ class MyGame extends Phaser.Scene
 
         this.physics.add.collider(stars, platforms);
         this.physics.add.overlap(this.player, stars, (player, star) => {
+            this.canDash = true;
             star.disableBody(true, true);
             this.score += 10;
             scoreText.setText('Score: ' + this.score);
@@ -102,13 +123,13 @@ class MyGame extends Phaser.Scene
         if (cursors.left.isDown)
         {
             this.player.setVelocityX(-160);
-
+            this.player.lastDirectionX = -1
             this.player.anims.play('left', true);
         }
         else if (cursors.right.isDown)
         {
             this.player.setVelocityX(160);
-
+            this.player.lastDirectionX = 1
             this.player.anims.play('right', true);
         }
         else
@@ -118,10 +139,27 @@ class MyGame extends Phaser.Scene
             this.player.anims.play('turn');
         }
 
-        if (cursors.up.isDown && this.player.body.touching.down)
-        {
-            this.player.setVelocityY(-500);
+        if(cursors.shift.isDown && this.canDash){
+            this.dash = 1
+            this.canDash = false
         }
+
+        if(this.dash>0){
+            let speed = Math.max(1800 * easeCurve(this.dash), 160)
+            this.player.setVelocityX(speed * this.player.lastDirectionX)
+            this.dash -= 0.05
+            console.log("Called dash")
+        }
+        
+        if(this.player.body.touching.down){
+            if(this.dash <= 0){
+                this.canDash = true
+            }
+            if (cursors.up.isDown && this.player.body.touching.down){   
+                this.player.setVelocityY(-500);
+            }
+        }
+
     }
 }
 
@@ -134,7 +172,7 @@ const config = {
         default: 'arcade',
         arcade: {
             gravity: { y: 300 },
-            debug: false
+            debug: true
         }
     },
     scene: MyGame
