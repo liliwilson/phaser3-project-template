@@ -13,6 +13,7 @@ class MyGame extends Phaser.Scene {
     constructor() {
         super();
 
+        this.score = 0;
         this.player;
     }
 
@@ -39,15 +40,11 @@ class MyGame extends Phaser.Scene {
         const map = this.make.tilemap({ key: 'map/01' });
         const tileset = map.addTilesetImage('level_one', 'tileset/01', 32, 32);
 
-        const debugGraphics = this.add.graphics().setAlpha(0.7);
-
         const platforms = map.createLayer('platforms', tileset);
+        const boundary = map.createLayer('boundary', tileset);
+
         platforms.setCollisionByProperty({ collides: true });
-        platforms.renderDebug(debugGraphics, {
-            tileColor: null,
-            collidingTileColor: new Phaser.Display.Color(243, 234, 48, 255),
-            faceColor: new Phaser.Display.Color(40, 39, 37, 255)
-        });
+        boundary.setCollisionByExclusion(-1);
 
         this.player = this.physics.add.sprite(100, 260, 'dude');
         this.player.setBounce(0.2);
@@ -55,7 +52,31 @@ class MyGame extends Phaser.Scene {
         this.cameras.main.startFollow(this.player, true);
 
         this.physics.add.collider(this.player, platforms, null, null, this);
+        this.physics.add.collider(this.player, boundary, null, null, this);
 
+        // make stars
+        const stars = this.physics.add.group({
+            key: 'star',
+            repeat: 11,
+            setXY: { x: 40, y: 0, stepX: 70 }
+        });
+        
+        stars.children.iterate(function (child) {
+            child.setBounceY(Phaser.Math.FloatBetween(0.4, 0.8));
+        });
+
+        const scoreText = this.add.text(16, 16, 'Score: 0', { fontSize: '32px', fill: '#000' });
+        scoreText.setScrollFactor(0);
+
+
+        this.physics.add.collider(stars, platforms);
+        this.physics.add.overlap(this.player, stars, (player, star) => {
+            star.disableBody(true, true);
+            this.score += 10;
+            scoreText.setText('Score: ' + this.score);
+        });
+
+        // animate the player
         this.anims.create({
             key: 'left',
             frames: this.anims.generateFrameNumbers('dude', { start: 0, end: 3 }),
@@ -112,7 +133,7 @@ const config = {
         default: 'arcade',
         arcade: {
             gravity: { y: 300 },
-            debug: true
+            debug: false
         }
     },
     scene: MyGame,
