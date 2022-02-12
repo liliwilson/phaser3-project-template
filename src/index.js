@@ -13,6 +13,7 @@ class MyGame extends Phaser.Scene
     {
         super();
 
+        this.score = 0;
         this.player;
     }
 
@@ -33,20 +34,21 @@ class MyGame extends Phaser.Scene
     {
         const sky = this.add.image(400, 300, 'sky');
 
+        // make platforms
         const platforms = this.physics.add.staticGroup();
-
         platforms.create(400, 568, 'ground').setScale(2).refreshBody();
         platforms.create(600, 400, 'ground');
         platforms.create(50, 250, 'ground');
         platforms.create(750, 220, 'ground');
 
+        // make player
         this.player = this.physics.add.sprite(100, 450, 'dude');
         this.player.setBounce(0.2);
         this.player.setCollideWorldBounds(true);
         this.player.body.setGravityY(300)
-
         this.physics.add.collider(this.player, platforms);
 
+        // make stars
         const stars = this.physics.add.group({
             key: 'star',
             repeat: 11,
@@ -59,11 +61,17 @@ class MyGame extends Phaser.Scene
         
         });
 
+        const scoreText = this.add.text(16, 16, 'score: 0', { fontSize: '32px', fill: '#000' });
+
+
         this.physics.add.collider(stars, platforms);
+        this.physics.add.overlap(this.player, stars, (player, star) => {
+            star.disableBody(true, true);
+            this.score += 10;
+            scoreText.setText('Score: ' + this.score);
+        });
 
-        this.physics.add.overlap(this.player, stars, (player, star) => {star.disableBody(true, true)});
-
-
+        // animate the player
         this.anims.create({
             key: 'left',
             frames: this.anims.generateFrameNumbers('dude', { start: 0, end: 3 }),
