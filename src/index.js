@@ -5,11 +5,12 @@ import groundImg from './assets/platform.png';
 import startImg from './assets/star.png';
 import bombImg from './assets/bomb.png';
 import dudeSprite from './assets/dude.png';
-class MyGame extends Phaser.Scene
-{
+import levelOneMap from './assets/tilemaps/level_one.json';
+import levelOneTileset from './assets/tilesets/level_one.png';
 
-    constructor ()
-    {
+class MyGame extends Phaser.Scene {
+
+    constructor() {
         super();
 
         this.score = 0;
@@ -19,64 +20,56 @@ class MyGame extends Phaser.Scene
         this.player;
     }
 
-    preload ()
-    {
+    preload() {
         this.load.image('logo', logoImg);
         this.load.image('sky', skyImg);
         this.load.image('ground', groundImg);
         this.load.image('star', startImg);
         this.load.image('bomb', bombImg);
-        this.load.spritesheet('dude', 
-        dudeSprite,
+
+        this.load.tilemapTiledJSON('map/01', levelOneMap);
+        this.load.image('tileset/01', levelOneTileset);
+
+        this.load.spritesheet('dude',
+            dudeSprite,
             { frameWidth: 32, frameHeight: 48 }
         );
     }
-      
-    create ()
-    {
-        const { width, height } = this.sys.game.canvas;
-        const sky = this.add.image(400, 300, 'sky');
 
-        // make platforms
-        const platforms = this.physics.add.staticGroup();
-        // platforms.create(400, 568, 'ground').setScale(2).refreshBody();
-        platforms.create(600, 400, 'ground');
-        platforms.create(50, 250, 'ground');
-        platforms.create(750, 220, 'ground');
-        platforms.create(100, 500, 'ground');
+    create() {
+        this.sky = this.add.image(400, 300, 'sky');
+        this.sky.setScrollFactor(0);
 
-        const walls = this.physics.add.staticGroup();
-        walls.create(100, 500, 'ground');
-        walls.rotate(Math.PI/2);
+        const map = this.make.tilemap({ key: 'map/01' });
+        const tileset = map.addTilesetImage('level_one', 'tileset/01', 32, 32);
 
-        // make player
-        const player = this.physics.add.sprite(100, 450, 'dude');
-        // player.body.setCircle(30)
-        // mySprite.body.setOffset(12, 5);
+        const platforms = map.createLayer('platforms', tileset);
+        const boundary = map.createLayer('boundary', tileset);
 
-        player.setBounce(0.2);
-        player.setCollideWorldBounds(true);
-        player.body.setGravityY(300)
-        this.physics.add.collider(player, platforms);
-        this.physics.add.collider(player, walls);
-        this.player = player
+        platforms.setCollisionByProperty({ collides: true });
+        boundary.setCollisionByExclusion(-1);
 
-        const balls = this.physics.add.group();
+        this.player = this.physics.add.sprite(100, 260, 'dude');
+        this.player.setBounce(0.2);
+        this.player.body.setGravityY(300);
+        this.cameras.main.startFollow(this.player, true);
+
+        this.physics.add.collider(this.player, platforms, null, null, this);
+        this.physics.add.collider(this.player, boundary, null, null, this);
 
         // make stars
         const stars = this.physics.add.group({
             key: 'star',
             repeat: 11,
-            setXY: { x: 12, y: 0, stepX: 70 }
+            setXY: { x: 40, y: 0, stepX: 70 }
         });
         
         stars.children.iterate(function (child) {
-        
             child.setBounceY(Phaser.Math.FloatBetween(0.4, 0.8));
-        
         });
 
-        const scoreText = this.add.text(16, 16, 'score: 0', { fontSize: '32px', fill: '#000' });
+        const scoreText = this.add.text(16, 16, 'Score: 0', { fontSize: '32px', fill: '#000' });
+        scoreText.setScrollFactor(0);
 
 
         this.physics.add.collider(stars, platforms);
@@ -94,41 +87,36 @@ class MyGame extends Phaser.Scene
             frameRate: 10,
             repeat: -1
         });
-        
+
         this.anims.create({
             key: 'turn',
-            frames: [ { key: 'dude', frame: 4 } ],
+            frames: [{ key: 'dude', frame: 4 }],
             frameRate: 20
         });
-        
+
         this.anims.create({
             key: 'right',
             frames: this.anims.generateFrameNumbers('dude', { start: 5, end: 8 }),
             frameRate: 10,
             repeat: -1
         });
-
-
     }
 
-    update () {
+    update() {
 
         const cursors = this.input.keyboard.createCursorKeys();
 
-        if (cursors.left.isDown)
-        {
+        if (cursors.left.isDown) {
             this.player.setVelocityX(-160);
             this.player.lastDirectionX = -1
             this.player.anims.play('left', true);
         }
-        else if (cursors.right.isDown)
-        {
+        else if (cursors.right.isDown) {
             this.player.setVelocityX(160);
             this.player.lastDirectionX = 1
             this.player.anims.play('right', true);
         }
-        else
-        {
+        else {
             this.player.setVelocityX(0);
 
             this.player.anims.play('turn');
@@ -187,7 +175,8 @@ const config = {
             debug: true
         }
     },
-    scene: MyGame
+    scene: MyGame,
+    pixelArt: true
 };
 
 const game = new Phaser.Game(config);
