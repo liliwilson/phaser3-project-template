@@ -5,10 +5,6 @@ import groundImg from './assets/platform.png';
 import startImg from './assets/star.png';
 import bombImg from './assets/bomb.png';
 import dudeSprite from './assets/dude.png';
-
-function easeCurve(x) {
-    return Math.pow(x,3)
-}
 class MyGame extends Phaser.Scene
 {
 
@@ -19,7 +15,8 @@ class MyGame extends Phaser.Scene
         this.score = 0;
         // 1 for start of dash
         // 0 for end of dash
-        this.dash = 0;
+        this.dashImages = []
+        this.dashSteps = 0;
         this.canDash = true
         this.player;
     }
@@ -137,22 +134,39 @@ class MyGame extends Phaser.Scene
             this.player.setVelocityX(0);
 
             this.player.anims.play('turn');
+
         }
 
         if(cursors.shift.isDown && this.canDash){
-            this.dash = 1
+            this.dashSteps = 20
             this.canDash = false
         }
 
-        if(this.dash>0){
-            let speed = Math.max(1800 * easeCurve(this.dash), 160)
+        if(this.dashSteps>0){
+            const speed = Math.max(1800 * (this.dashSteps/20.0), 160)
             this.player.setVelocityX(speed * this.player.lastDirectionX)
-            this.dash -= 0.05
-            console.log("Called dash")
+            if(this.dashSteps%2==0){
+                const afterImage = this.add.sprite(this.player.x, this.player.y, 'dude');
+                afterImage.anims.setCurrentFrame(this.player.anims.currentFrame)
+                afterImage.setAlpha(0.5)
+                
+                afterImage.ticks = 0
+                this.dashImages.push(afterImage)
+            }
+            this.dashSteps--;
         }
+        for(let image of this.dashImages){
+            image.ticks++;
+            if(image.ticks>12){
+                image.destroy()
+                image.deleted = true
+            }
+        }
+        this.dashImages = this.dashImages.filter((image)=>!image.deleted)
+        
         
         if(this.player.body.touching.down){
-            if(this.dash <= 0){
+            if(this.dashSteps <= 0){
                 this.canDash = true
             }
             if (cursors.up.isDown && this.player.body.touching.down){   
