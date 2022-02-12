@@ -151,11 +151,11 @@ class MyGame extends Phaser.Scene {
         this.dashImages = this.dashImages.filter((image)=>!image.deleted)
         
         
-        if(this.player.body.touching.down){
+        if(this.player.body.onFloor()){
             if(this.dashSteps <= 0){
                 this.canDash = true
             }
-            if (cursors.up.isDown && this.player.body.touching.down){   
+            if (cursors.up.isDown){   
                 this.player.setVelocityY(-500);
             }
         }
