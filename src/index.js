@@ -19,6 +19,7 @@ class MyGame extends Phaser.Scene {
         this.dashSteps = 0;
         this.canDash = true
         this.player;
+        this.jumpFrames = 10;
     }
 
     preload() {
@@ -150,14 +151,16 @@ class MyGame extends Phaser.Scene {
         }
         this.dashImages = this.dashImages.filter((image)=>!image.deleted)
         
-        
+        this.jumpFrames--;
         if(this.player.body.onFloor()){
             if(this.dashSteps <= 0){
                 this.canDash = true
             }
-            if (cursors.up.isDown){   
-                this.player.setVelocityY(-500);
-            }
+            this.jumpFrames = 10;
+        }
+
+        if (this.jumpFrames>0 && cursors.up.isDown){   
+            this.player.setVelocityY(-500);
         }
 
     }
