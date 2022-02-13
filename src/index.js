@@ -1,12 +1,15 @@
 import Phaser from 'phaser';
+import Enemy from './entities/Enemy';
+
 import logoImg from './assets/logo.png';
 import skyImg from './assets/sky.png';
 import groundImg from './assets/platform.png';
 import startImg from './assets/star.png';
 import bombImg from './assets/bomb.png';
 import dudeSprite from './assets/dude.png';
-import levelOneMap from './assets/tilemaps/level_one.json';
-import levelOneTileset from './assets/tilesets/level_one.png';
+import enemyRunSprite from './assets/spritesheets/enemy_run.png';
+import tilemap01 from './assets/tilemaps/01.json';
+import tileset02 from './assets/tilesets/02.png';
 
 const BASE_SPEED = 200
 const DASH_SPEED = 1800
@@ -29,8 +32,13 @@ class MyGame extends Phaser.Scene {
         this.load.image('star', startImg);
         this.load.image('bomb', bombImg);
 
-        this.load.tilemapTiledJSON('map/01', levelOneMap);
-        this.load.image('tileset/01', levelOneTileset);
+        this.load.tilemapTiledJSON('tilemap/01', tilemap01);
+        this.load.image('tileset/02', tileset02);
+
+        this.load.spritesheet('enemy',
+            enemyRunSprite,
+            { frameWidth: 32, frameHeight: 32 }
+        );
 
         this.load.spritesheet('dude',
             dudeSprite,
@@ -42,47 +50,27 @@ class MyGame extends Phaser.Scene {
         this.sky = this.add.image(400, 300, 'sky');
         this.sky.setScrollFactor(0);
 
-        const map = this.make.tilemap({ key: 'map/01' });
-        const tileset = map.addTilesetImage('level_one', 'tileset/01', 32, 32);
-
+        const map = this.make.tilemap({ key: 'tilemap/01' });
+        const tileset = map.addTilesetImage('02', 'tileset/02', 32, 32);
         const platforms = map.createLayer('platforms', tileset);
-        const boundary = map.createLayer('boundary', tileset);
+        const boundary = map.createLayer('boundary');
+        const enemyCollider = map.createLayer('enemy_collider');
 
         platforms.setCollisionByProperty({ collides: true });
-        boundary.setCollisionByExclusion(-1);
-
-        this.player = this.physics.add.sprite(100, 260, 'dude');
-        this.player.setBounce(0.2);
-        this.player.body.setGravityY(300);
-        this.cameras.main.startFollow(this.player, true);
-
-        this.physics.add.collider(this.player, platforms, null, null, this);
-        this.physics.add.collider(this.player, boundary, null, null, this);
-
-        // make stars
-        const stars = this.physics.add.group({
-            key: 'star',
-            repeat: 11,
-            setXY: { x: 40, y: 0, stepX: 70 }
-        });
-        
-        stars.children.iterate(function (child) {
-            child.setBounceY(Phaser.Math.FloatBetween(0.4, 0.8));
-        });
-
-        const scoreText = this.add.text(16, 16, 'Score: 0', { fontSize: '32px', fill: '#000' });
-        scoreText.setScrollFactor(0);
-
-
-        this.physics.add.collider(stars, platforms);
-        this.physics.add.overlap(this.player, stars, (player, star) => {
-            this.canDash = true;
-            star.disableBody(true, true);
-            this.score += 10;
-            scoreText.setText('Score: ' + this.score);
-        });
+        boundary.setCollisionByProperty({ collides: true });
+        enemyCollider.setCollisionByExclusion(-1);
 
         // animate the player
+        this.anims.create({
+            key: 'enemy-run',
+            repeat: -1,
+            frameRate: 20,
+            frames: this.anims.generateFrameNumbers('enemy', {
+                start: 0,
+                end: 11
+            })
+        });
+
         this.anims.create({
             key: 'left',
             frames: this.anims.generateFrameNumbers('dude', { start: 0, end: 3 }),
@@ -102,6 +90,62 @@ class MyGame extends Phaser.Scene {
             frameRate: 10,
             repeat: -1
         });
+
+        // make stars
+        const stars = this.physics.add.group({
+            key: 'star',
+            repeat: 11,
+            setXY: { x: 64, y: 0, stepX: 70 }
+        });
+
+        stars.children.iterate(function (child) {
+            child.setBounceY(Phaser.Math.FloatBetween(0.4, 0.8));
+        })
+
+        // make enemies
+        this.enemies = this.physics.add.group({
+            classType: Enemy,
+            gravityY: 15000
+        });
+
+        let playerX = 0, playerY = 0;
+
+        for (const object of map.getObjectLayer('events').objects) {
+            if (object.name === "spawn_player") {
+                playerX = object.x;
+                playerY = object.y;
+            } else if (object.name === "spawn_enemy") {
+                this.enemies.get(object.x + object.width * 0.5, object.y - object.height * 0.5, 'enemy')
+            }
+        }
+
+        this.player = this.physics.add.sprite(playerX, playerY, 'dude');
+        this.player.setBounce(0.2);
+        this.player.body.setGravityY(300);
+
+
+        this.physics.add.collider(this.player, platforms, null, null, this);
+        this.physics.add.collider(this.player, boundary, null, null, this);
+        this.physics.add.collider(this.enemies, platforms, null, null, this);
+        this.physics.add.collider(this.enemies, enemyCollider, this.handleEnemyCollide);
+
+        this.cameras.main.startFollow(this.player, true);
+        this.cameras.main.setBounds(34, 34, boundary.width - 66, boundary.height - 66);
+
+        const scoreText = this.add.text(16, 16, 'Score: 0', { fontSize: '32px', fill: '#000' });
+        scoreText.setScrollFactor(0);
+      
+        this.physics.add.collider(stars, platforms);
+        this.physics.add.overlap(this.player, stars, (player, star) => {
+            this.canDash = true;
+            star.disableBody(true, true);
+            this.score += 10;
+            scoreText.setText('Score: ' + this.score);
+        });
+    }
+
+    handleEnemyCollide(obj, tile) {
+        obj.left = !obj.left;
     }
 
     update() {
@@ -175,7 +219,7 @@ const config = {
         default: 'arcade',
         arcade: {
             gravity: { y: 300 },
-            debug: false
+            debug: true
         }
     },
     scene: MyGame,
