@@ -8,8 +8,9 @@ import dudeSprite from './assets/dude.png';
 import levelOneMap from './assets/tilemaps/level_one.json';
 import levelOneTileset from './assets/tilesets/level_one.png';
 
+const BASE_SPEED = 200
+const DASH_SPEED = 1800
 class MyGame extends Phaser.Scene {
-
     constructor() {
         super();
 
@@ -106,36 +107,35 @@ class MyGame extends Phaser.Scene {
 
         const cursors = this.input.keyboard.createCursorKeys();
 
-        if (cursors.left.isDown) {
-            this.player.setVelocityX(-160);
-            this.player.lastDirectionX = -1
-            this.player.anims.play('left', true);
-        }
-        else if (cursors.right.isDown) {
-            this.player.setVelocityX(160);
-            this.player.lastDirectionX = 1
-            this.player.anims.play('right', true);
-        }
-        else {
-            this.player.setVelocityX(0);
+        if(this.dashSteps==0){
+            if (cursors.left.isDown) {
+                this.player.setVelocityX(-BASE_SPEED);
+                this.player.lastDirectionX = -1
+                this.player.anims.play('left', true);
+            }
+            else if (cursors.right.isDown) {
+                this.player.setVelocityX(BASE_SPEED);
+                this.player.lastDirectionX = 1
+                this.player.anims.play('right', true);
+            }
+            else {
+                this.player.setVelocityX(0);
+                this.player.anims.play('turn');
+            }
 
-            this.player.anims.play('turn');
-
-        }
-
-        if(cursors.shift.isDown && this.canDash){
-            this.dashSteps = 20
-            this.canDash = false
+            if(cursors.shift.isDown && this.canDash){
+                this.dashSteps = 20
+                this.canDash = false
+            }
         }
 
         if(this.dashSteps>0){
-            const speed = Math.max(1800 * (this.dashSteps/20.0), 160)
+            const speed = Math.max(DASH_SPEED * (this.dashSteps/20.0), BASE_SPEED)
             this.player.setVelocityX(speed * this.player.lastDirectionX)
             if(this.dashSteps%2==0){
                 const afterImage = this.add.sprite(this.player.x, this.player.y, 'dude');
                 afterImage.anims.setCurrentFrame(this.player.anims.currentFrame)
                 afterImage.setAlpha(0.5)
-                
                 afterImage.ticks = 0
                 this.dashImages.push(afterImage)
             }
@@ -172,7 +172,7 @@ const config = {
         default: 'arcade',
         arcade: {
             gravity: { y: 300 },
-            debug: true
+            debug: false
         }
     },
     scene: MyGame,
