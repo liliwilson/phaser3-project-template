@@ -68,9 +68,6 @@ class MyGame extends Phaser.Scene {
                 end: 11
             })
         });
-      
-        const scoreText = this.add.text(16, 16, 'Score: 0', { fontSize: '32px', fill: '#000' });
-        scoreText.setScrollFactor(0);
 
         this.anims.create({
             key: 'left',
