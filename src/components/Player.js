@@ -12,6 +12,9 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
   dashSteps = 0;
   canDash = true;
 
+  damageTime = 0;
+  damaging = false;
+
   constructor(scene, x, y) {
     super(scene, x, y, 'player');
 
@@ -51,7 +54,47 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     });
   }
 
+  handleDamage() {
+    // Don't damage the player if they are mid dash
+    if (this.dashSteps > 0) {
+      return;
+    }
+
+    if (this.damaging) {
+      return;
+    }
+
+    this.damaging = true;
+
+    const dir = this.body.velocity
+      .normalize()
+      .negate()
+      .scale(500);
+
+    this.setVelocity(dir.x, dir.y);
+    this.setTint(0xff0000);
+    this.damageTime = 0;
+  }
+
+  preUpdate(t, dt) {
+    super.preUpdate(t, dt);
+
+    if (this.damaging) {
+      this.damageTime += dt;
+
+      if (this.damageTime >= 250) {
+        this.setTint(0xffffff);
+        this.damageTime = 0;
+        this.damaging = false;
+      }
+    }
+  }
+
   update(cursors) {
+    if (this.damaging) {
+      return;
+    }
+
     if (this.dashSteps == 0) {
       if (cursors.left.isDown) {
         this.setVelocityX(-Player.BASE_SPEED);

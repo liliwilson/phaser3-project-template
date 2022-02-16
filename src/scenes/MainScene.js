@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 
-import Enemy from '../components/Enemy';
 import Player from '../components/Player';
+import Enemy from '../components/enemies/Enemy';
 import Background from '../components/Background';
 
 import logoImg from '../assets/logo.png';
@@ -14,9 +14,6 @@ import enemyRunSprite from '../assets/spritesheets/enemy_run.png';
 import tilemap01 from '../assets/tilemaps/01.json';
 import tileset02 from '../assets/tilesets/02.png';
 
-export const BASE_SPEED = 200
-export const DASH_SPEED = 1800
-
 export default class MainScene extends Phaser.Scene {
   constructor() {
     super({
@@ -24,11 +21,6 @@ export default class MainScene extends Phaser.Scene {
     });
 
     this.score = 0;
-    this.dashImages = [];
-    this.dashSteps = 0;
-    this.canDash = true;
-    this.player;
-    this.jumpFrames = 10;
   }
 
   loadImages() {
@@ -69,23 +61,11 @@ export default class MainScene extends Phaser.Scene {
     const map = this.make.tilemap({ key: 'tilemap/01' });
     const tileset = map.addTilesetImage('02', 'tileset/02', 32, 32);
     const platforms = map.createLayer('platforms', tileset);
-    const boundary = map.createLayer('boundary');
     const enemyCollider = map.createLayer('enemy_collider');
+    const events = map.getObjectLayer("events");
 
-    platforms.setCollisionByExclusion(-1);
-    boundary.setCollisionByExclusion(-1);
-    enemyCollider.setCollisionByExclusion(-1);
-
-    // animate the player
-    this.anims.create({
-      key: 'enemy-run',
-      repeat: -1,
-      frameRate: 20,
-      frames: this.anims.generateFrameNumbers('enemy', {
-        start: 0,
-        end: 11
-      })
-    });
+    platforms.setCollisionByExclusion([-1]);
+    enemyCollider.setCollisionByExclusion([-1]);
 
     // make stars
     const stars = this.physics.add.group({
@@ -98,57 +78,57 @@ export default class MainScene extends Phaser.Scene {
       child.setBounceY(Phaser.Math.FloatBetween(0.4, 0.8));
     });
 
-    // make enemies
+    const { x, y } = events.objects.filter(object => object.name === "spawn_player")[0];
+    const enemyPositions = events.objects
+      .filter(object => object.name === "spawn_enemy")
+      .map(object => ({ x: object.x, y: object.y }));
+
+    this.player = new Player(this, x, y);
+
+    this.physics.add.collider(this.player, platforms);
+
     this.enemies = this.physics.add.group({
       classType: Enemy,
-      gravityY: 15000
+      runChildUpdate: true,
     });
 
-    let playerX = 0, playerY = 0;
+    enemyPositions.forEach(({ x, y }) => {
+      this.enemies.get(x, y);
+    });
 
-    for (const object of map.getObjectLayer('events').objects) {
-      if (object.name === "spawn_player") {
-        playerX = object.x;
-        playerY = object.y;
-      } else if (object.name === "spawn_enemy") {
-        this.enemies.get(object.x + object.width * 0.5, object.y - object.height * 0.5, 'enemy');
-      }
-    }
-
-    // this.player = this.physics.add.sprite(playerX, playerY, 'dude');
-    // this.player.setBounce(0.2);
-    // this.player.body.setGravityY(300);
-
-    this.player = new Player(this, playerX, playerY);
-
-
-    this.physics.add.collider(this.player, platforms, null, null, this);
-    this.physics.add.collider(this.player, boundary, null, null, this);
-    this.physics.add.collider(this.enemies, platforms, null, null, this);
-    this.physics.add.collider(this.enemies, enemyCollider, this.handleEnemyCollide);
+    this.physics.add.collider(this.enemies, platforms);
+    this.physics.add.collider(this.enemies, enemyCollider, this.handleEnemyCollide, null, this);
+    this.physics.add.overlap(this.player, this.enemies, this.handlePlayerEnemyCollide, null, this);
 
     this.cameras.main.startFollow(this.player, true);
-    // this.cameras.main.setBounds(34, 34, boundary.width - 66, boundary.height - 66);
     this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
     this.physics.world.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
 
-    const scoreText = this.add.text(16, 16, 'Score: 0', { fontSize: '32px', fill: '#000' });
-    scoreText.setScrollFactor(0);
+    this.scoreText = this.add.text(16, 16, 'Score: 0', { fontSize: '32px', fill: '#000' });
+    this.scoreText.setScrollFactor(0);
 
     this.physics.add.collider(stars, platforms);
-    this.physics.add.overlap(this.player, stars, (player, star) => {
-      player.canDash = true;
-      star.disableBody(true, true);
-      this.score += 10;
-      scoreText.setText('Score: ' + this.score);
-    });
+    this.physics.add.overlap(this.player, stars, this.handlePlayerStarOverlap, null, this);
   }
 
-  handleEnemyCollide(obj, tile) {
+  handlePlayerEnemyCollide(player, enemy) {
+    // this.cameras.main.shake(200, 0.05);
+
+    player.handleDamage();
+  }
+
+  handlePlayerStarOverlap(player, star) {
+    player.canDash = true;
+    star.disableBody(true, true);
+    this.score += 10;
+  }
+
+  handleEnemyCollide(obj, _tile) {
     obj.left = !obj.left;
   }
 
   update() {
     this.player.update(this.cursors);
+    this.scoreText.setText('Score: ' + this.score);
   }
 }
