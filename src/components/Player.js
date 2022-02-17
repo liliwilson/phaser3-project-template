@@ -2,6 +2,8 @@ import Phaser from 'phaser';
 
 export default class Player extends Phaser.Physics.Arcade.Sprite {
   static BASE_SPEED = 200;
+  static GRAVITY = 350;
+  static JUMP_VELOCITY = 480;
 
   constructor(scene, x, y) {
     super(scene, x, y, 'player');
@@ -18,7 +20,8 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
   createProperties() {
     this.setCollideWorldBounds(true);
     this.setScale(1.2);
-    this.body.setAllowGravity(false);
+    this.body.setBounce(0.2);
+    this.body.setGravityY(Player.GRAVITY);
   }
 
   createAnimations() {
@@ -59,12 +62,8 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
       this.anims.play('player-idle', true);
     }
     
-    if (cursors.up.isDown) {
-      this.setVelocityY(-Player.BASE_SPEED);
-    } else if (cursors.down.isDown) {
-      this.setVelocityY(Player.BASE_SPEED);
-    } else {
-      this.setVelocityY(0);
+    if (cursors.up.isDown && this.body.onFloor()) {
+      this.setVelocityY(-Player.JUMP_VELOCITY);
     }
   }
 }
