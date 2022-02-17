@@ -12,7 +12,7 @@ import bombImg from '../assets/bomb.png';
 import playerSprite from '../assets/dude.png';
 import enemyRunSprite from '../assets/spritesheets/enemy_run.png';
 import tilemap01 from '../assets/tilemaps/01.json';
-import tileset02 from '../assets/tilesets/02.png';
+import tileset01 from '../assets/tilesets/01.png';
 
 export default class MainScene extends Phaser.Scene {
   constructor() {
@@ -45,7 +45,7 @@ export default class MainScene extends Phaser.Scene {
 
   loadTilemaps() {
     this.load.tilemapTiledJSON('tilemap/01', tilemap01);
-    this.load.image('tileset/02', tileset02);
+    this.load.image('tileset/01', tileset01);
   }
 
   preload() {
@@ -59,7 +59,7 @@ export default class MainScene extends Phaser.Scene {
     this.background = new Background(this);
 
     const map = this.make.tilemap({ key: 'tilemap/01' });
-    const tileset = map.addTilesetImage('02', 'tileset/02', 32, 32);
+    const tileset = map.addTilesetImage('01', 'tileset/01', 32, 32);
     const platforms = map.createLayer('platforms', tileset);
     const enemyCollider = map.createLayer('enemy_collider');
     const events = map.getObjectLayer("events");

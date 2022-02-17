@@ -80,11 +80,11 @@
         {
          "columns":22,
          "firstgid":1,
-         "image":"..\/tilesets\/02.png",
+         "image":"..\/tilesets\/01.png",
          "imageheight":352,
          "imagewidth":704,
          "margin":0,
-         "name":"02",
+         "name":"01",
          "spacing":0,
          "tilecount":242,
          "tileheight":32,
