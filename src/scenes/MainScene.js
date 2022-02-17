@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 
 import skyImg from '../assets/sky.png';
+import starImg from '../assets/star.png';
 import playerSprite from '../assets/dude.png';
 
 import tilemap01 from '../assets/tilemaps/01.json';
@@ -11,6 +12,8 @@ import Background from '../components/Background';
 import Player from '../components/Player';
 
 export default class MainScene extends Phaser.Scene {
+  score = 0;
+
   constructor() {
     super({
       key: "MainScene"
@@ -18,8 +21,9 @@ export default class MainScene extends Phaser.Scene {
   }
 
   preload() {
-    // Place your code to load assets here...
+    // Loading in images
     this.load.image('sky', skyImg);
+    this.load.image('star', starImg);
     this.load.spritesheet('player', playerSprite, { frameWidth: 32, frameHeight: 48 });
 
     // Loading in tilemap assets.
@@ -51,12 +55,18 @@ export default class MainScene extends Phaser.Scene {
     // Tell Phaser to make every tile on 'foreground' layer collideable.
     foreground.setCollisionByExclusion([-1]);
 
-    this.debugTilemapLayer(foreground);
+    // this.debugTilemapLayer(foreground);
 
     return {
       map,
       foreground
     };
+  }
+
+  createCollisions() {
+    this.physics.add.collider(this.player, this.tilemap.foreground);
+    this.physics.add.collider(this.collectibles, this.tilemap.foreground);
+    this.physics.add.overlap(this.collectibles, this.player, (player, star) => { this.score += 10; star.disableBody(true, true); });
   }
 
   create() {
@@ -78,8 +88,19 @@ export default class MainScene extends Phaser.Scene {
 
     this.player = new Player(this, x, y);
 
-    // Setup collisions between the player and the tilemap.
-    this.physics.add.collider(this.player, this.tilemap.foreground);
+    // Place 11 collectibles.
+    this.collectibles = this.physics.add.group({
+      key: 'star',
+      repeat: 11,
+      setXY: { x: 64, y: 0, stepX: 70 }
+    });
+
+    this.collectibles.children.iterate((child) => {
+      child.setBounceY(Phaser.Math.Between(0.4, 0.8));
+    });
+
+    // Setup collisions.
+    this.createCollisions();
 
     // Tell the camera to follow the player and set world bounds to be tilemap dimensions.
     const { main } = this.cameras;
@@ -88,6 +109,10 @@ export default class MainScene extends Phaser.Scene {
 
     // Tell background to not scroll with the camera.
     this.background.setScrollFactor(0);
+
+    // Create score text.
+    this.scoreText = this.add.text(16, 16, 'Score: 0', { fontSize: '20px', fontFamily: 'VT323', fill: '#fff' });
+    this.scoreText.setScrollFactor(0);
   }
 
   update() {
@@ -98,5 +123,7 @@ export default class MainScene extends Phaser.Scene {
       this.cameras.main.flash(250, 255, 255, 255);
       this.cameras.main.shake(250, 0.075);
     }
+
+    this.scoreText.setText('Score: ' + this.score);
   }
 }
