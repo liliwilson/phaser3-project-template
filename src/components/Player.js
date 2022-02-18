@@ -15,6 +15,8 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
   damageTime = 0;
   damaging = false;
 
+  jumpFrames = 0
+
   constructor(scene, x, y) {
     super(scene, x, y, 'player');
 
