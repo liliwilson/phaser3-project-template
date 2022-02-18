@@ -90,6 +90,7 @@ export default class MainScene extends Phaser.Scene {
 
     this.physics.add.collider(this.enemies, this.tilemap.foreground);
     this.physics.add.collider(this.enemies, this.tilemap.enemyCollider, (enemy, collider) => { enemy.turnAround(); })
+    this.physics.add.overlap(this.player, this.enemies, () => { this.player.handleDamage(); })
   }
 
   create() {

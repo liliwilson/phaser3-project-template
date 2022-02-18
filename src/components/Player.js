@@ -5,6 +5,9 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
   static GRAVITY = 350;
   static JUMP_VELOCITY = 480;
 
+  damageTime = 0;
+  damaging = false;
+
   constructor(scene, x, y) {
     super(scene, x, y, 'player');
 
@@ -22,6 +25,38 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.setScale(1.2);
     this.body.setBounce(0.2);
     this.body.setGravityY(Player.GRAVITY);
+  }
+
+  preUpdate(t, dt) {
+    super.preUpdate(t, dt);
+
+    if (this.damaging) {
+      this.damageTime += dt;
+
+      if (this.damageTime >= 250) {
+        this.setTint(0xffffff);
+        this.damageTime = 0;
+        this.damaging = false;
+      }
+    }
+  }
+
+  handleDamage() {
+    // Don't damage the player if they are mid dash
+    if (this.damaging) {
+      return;
+    }
+
+    this.damaging = true;
+
+    const dir = this.body.velocity
+      .normalize()
+      .negate()
+      .scale(500);
+
+    this.setVelocity(dir.x, dir.y);
+    this.setTint(0xff0000);
+    this.damageTime = 0;
   }
 
   createAnimations() {
@@ -51,6 +86,10 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
    * @param {Phaser.Types.Input.Keyboard.CursorKeys} cursors 
    */
   update(cursors) {
+    if (this.damaging) {
+      return;
+    }
+    
     if (cursors.left.isDown) {
       this.setVelocityX(-Player.BASE_SPEED);
       this.anims.play('player-left', true);
@@ -61,7 +100,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
       this.setVelocityX(0);
       this.anims.play('player-idle', true);
     }
-    
+
     if (cursors.up.isDown && this.body.onFloor()) {
       this.setVelocityY(-Player.JUMP_VELOCITY);
     }
