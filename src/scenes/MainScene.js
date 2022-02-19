@@ -7,6 +7,7 @@ import enemySprite from '../assets/spritesheets/enemy_run.png';
 
 import tilemap01 from '../assets/tilemaps/01.json';
 import tilemap02 from '../assets/tilemaps/02.json';
+import tilemap03 from '../assets/tilemaps/03.json';
 import tileset01 from '../assets/tilesets/01.png';
 
 import Background from '../components/Background';
@@ -30,8 +31,9 @@ export default class MainScene extends Phaser.Scene {
     this.load.spritesheet('enemy', enemySprite, { frameWidth: 32, frameHeight: 32 });
 
     // Loading in tilemap assets.
-    this.load.tilemapTiledJSON('tilemap/01', tilemap01);
-    this.load.tilemapTiledJSON('tilemap/02', tilemap02);
+    // this.load.tilemapTiledJSON('tilemap/01', tilemap01);
+    // this.load.tilemapTiledJSON('tilemap/02', tilemap02);
+    this.load.tilemapTiledJSON('tilemap/03', tilemap03);
     this.load.image('tileset/01', tileset01);
   }
 
@@ -51,7 +53,7 @@ export default class MainScene extends Phaser.Scene {
   }
 
   createTilemap() {
-    const map = this.make.tilemap({ key: 'tilemap/01' });
+    const map = this.make.tilemap({ key: 'tilemap/03' });
     const tileset = map.addTilesetImage('01', 'tileset/01');
     const foreground = map.createLayer('foreground', tileset, 0, 0);
     const enemyCollider = map.createLayer('enemy_collider', tileset);
